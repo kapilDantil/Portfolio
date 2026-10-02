@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CampusCare - Incident Response Dashboard</title>
+<style>
+  /* ============================================================
+     CSS: this section controls how everything LOOKS
+     (colors, spacing, fonts). It does not control behavior.
+  ============================================================ */
+  :root{
+    --bg:#0b0f16;
+    --panel:#131a24;
+    --panel-2:#182130;
+    --border:#232e3d;
+    --text:#e7edf5;
+    --muted:#8a97a8;
+    --accent:#3fb6ff;
+    --critical:#ff4d4f;
+    --high:#ff9f43;
+    --medium:#ffd93d;
+    --low:#3ddc84;
+    --ok:#3ddc84;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:24px;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  header h1{
+    margin:0;
+    font-size:22px;
+    letter-spacing:.3px;
+  }
+  header h1 span{color:var(--accent);}
+  header p{margin:2px 0 0;color:var(--muted);font-size:13px;}
+
+  /* summary strip */
+  .summary{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-bottom:22px;
+  }
+  .summary .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .summary .card .num{font-size:26px;font-weight:700;}
+  .summary .card .label{color:var(--muted);font-size:12px;margin-top:2px;}
+
+  .layout{
+    display:grid;
+    grid-template-columns:1.3fr 0.9fr;
+    gap:18px;
+  }
+  @media (max-width:900px){ .layout{grid-template-columns:1fr;} }
+
+  section.panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+  section.panel h2{
+    margin:0 0 12px;
+    font-size:15px;
+    color:var(--text);
+    border-bottom:1px solid var(--border);
+    padding-bottom:8px;
+  }
+
+  /* report form */
+  form.report-form{display:grid;gap:10px;}
+  form.report-form label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;}
+  form.report-form input, form.report-form select, form.report-form textarea{
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:14px;
+    font-family:inherit;
+  }
+  form.report-form textarea{resize:vertical;min-height:54px;}
+  form.report-form button{
+    background:var(--accent);
+    color:#04121c;
+    border:none;
+    padding:10px 14px;
+    border-radius:8px;
+    font-weight:700;
+    cursor:pointer;
+    font-size:14px;
+  }
+  form.report-form button:hover{opacity:.9;}
+
+  /* incident cards */
+  .incident{
+    border:1px solid var(--border);
+    border-left:4px solid var(--muted);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:10px;
+    background:var(--panel-2);
+  }
+  .incident.Critical{border-left-color:var(--critical);}
+  .incident.High{border-left-color:var(--high);}
+  .incident.Medium{border-left-color:var(--medium);}
+  .incident.Low{border-left-color:var(--low);}
+
+  .incident-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+  .incident-title{font-weight:700;font-size:14px;}
+  .incident-meta{color:var(--muted);font-size:12px;margin-top:4px;line-height:1.5;}
+  .incident-action{color:var(--accent);font-size:12px;margin-top:6px;}
+
+  .badge{
+    display:inline-block;
+    padding:2px 9px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.3px;
+  }
+  .badge.Critical{background:rgba(255,77,79,.18);color:var(--critical);}
+  .badge.High{background:rgba(255,159,67,.18);color:var(--high);}
+  .badge.Medium{background:rgba(255,217,61,.18);color:var(--medium);}
+  .badge.Low{background:rgba(61,220,132,.18);color:var(--low);}
+
+  .status-pill{
+    background:#243244;color:var(--text);
+    padding:2px 9px;border-radius:20px;font-size:11px;
+  }
+
+  .incident-buttons{margin-top:8px;display:flex;gap:8px;}
+  .incident-buttons button{
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:5px 10px;
+    border-radius:6px;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .incident-buttons button.primary{background:var(--accent);color:#04121c;border:none;font-weight:700;}
+  .incident-buttons button:hover{opacity:.85;}
+
+  /* responder list */
+  .responder{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:9px 12px;
+    margin-bottom:8px;
+    background:var(--panel-2);
+  }
+  .responder .name{font-weight:600;font-size:13px;}
+  .responder .type{color:var(--muted);font-size:12px;}
+  .avail{color:var(--ok);font-size:12px;font-weight:700;}
+  .busy{color:var(--high);font-size:12px;font-weight:700;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--border);}
+  th{color:var(--muted);font-weight:600;font-size:12px;}
+
+  .empty{color:var(--muted);font-size:13px;padding:8px 0;}
+
+  /* AI Assistant chat box */
+  .chat-log{
+    height:220px;
+    overflow-y:auto;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px;
+    background:var(--panel-2);
+    margin-bottom:10px;
+  }
+  .chat-msg{
+    max-width:85%;
+    padding:7px 10px;
+    border-radius:8px;
+    font-size:13px;
+    margin-bottom:8px;
+    line-height:1.4;
+  }
+  .chat-msg.bot{
+    background:#1c2a3a;
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+  .chat-msg.user{
+    background:var(--accent);
+    color:#04121c;
+    margin-left:auto;
+    font-weight:600;
+  }
+  .chat-input-row{display:flex;gap:8px;}
+  .chat-input-row input{
+    flex:1;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:8px;
+    font-size:13px;
+  }
+  .chat-input-row button{
+    background:var(--accent);
+    color:#04121c;
+    border:none;
+    padding:8px 14px;
+    border-radius:8px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .chat-hint{color:var(--muted);font-size:11px;margin-top:8px;}
+
+  /* ---------- HOLOGRAM BUILDING VISUAL ---------- */
+  .hologram-wrap{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:16px 0 26px;
+  }
+  .hologram-building{
+    position:relative;
+    width:320px;
+    max-width:95%;
+    border:1px solid rgba(63,182,255,.55);
+    border-radius:4px;
+    background:linear-gradient(180deg, rgba(63,182,255,.09), rgba(63,182,255,.02));
+    box-shadow:0 0 28px rgba(63,182,255,.35), inset 0 0 22px rgba(63,182,255,.12);
+    overflow:hidden;
+    transform:perspective(700px) rotateX(6deg);
+    transform-origin:bottom center;
+  }
+  .floor{
+    position:relative;
+    height:52px;
+    border-top:1px solid rgba(63,182,255,.22);
+  }
+  .floor:first-child{border-top:none;}
+  .floor-label{
+    position:absolute;
+    left:8px;
+    top:6px;
+    font-size:11px;
+    font-weight:700;
+    color:var(--text);
+    text-shadow:0 0 6px rgba(63,182,255,.8);
+    letter-spacing:.3px;
+  }
+  .floor-markers{position:absolute;inset:0;}
+  .marker{
+    position:absolute;
+    top:62%;
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:var(--critical);
+    box-shadow:0 0 12px var(--critical);
+    transform:translate(-50%,-50%);
+    animation:markerPulse 1.4s ease-in-out infinite;
+  }
+  .marker.High{background:var(--high);box-shadow:0 0 12px var(--high);}
+  .marker.Medium{background:var(--medium);box-shadow:0 0 12px var(--medium);}
+  .marker.Low{background:var(--low);box-shadow:0 0 12px var(--low);}
+  @keyframes markerPulse{
+    0%{transform:translate(-50%,-50%) scale(1);opacity:1;}
+    50%{transform:translate(-50%,-50%) scale(1.7);opacity:.45;}
+    100%{transform:translate(-50%,-50%) scale(1);opacity:1;}
+  }
+  .marker-label{
+    position:absolute;
+    top:18%;
+    transform:translate(-50%,-100%);
+    background:rgba(6,14,22,.95);
+    border:1px solid rgba(63,182,255,.6);
+    color:var(--text);
+    padding:3px 8px;
+    border-radius:4px;
+    font-size:11px;
+    font-weight:600;
+    white-space:nowrap;
+    pointer-events:none;
+  }
+  .scanline{
+    position:absolute;
+    left:0;right:0;
+    height:16px;
+    background:linear-gradient(180deg, rgba(63,182,255,0), rgba(63,182,255,.5), rgba(63,182,255,0));
+    animation:scan 3s linear infinite;
+    pointer-events:none;
+    z-index:2;
+  }
+  @keyframes scan{
+    0%{top:-16px;}
+    100%{top:100%;}
+  }
+  .hologram-base{
+    width:240px;
+    height:14px;
+    margin-top:6px;
+    border-radius:50%;
+    background:radial-gradient(ellipse at center, rgba(63,182,255,.55), rgba(63,182,255,0) 70%);
+    filter:blur(1px);
+  }
+
+  /* ---------- LOGIN SCREEN ---------- */
+  .login-overlay{
+    position:fixed; inset:0;
+    background:rgba(4,8,14,.94);
+    display:flex;align-items:center;justify-content:center;
+    z-index:9999;
+    padding:20px;
+  }
+  .login-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:32px 28px;
+    max-width:380px;
+    width:100%;
+    text-align:center;
+    box-shadow:0 0 40px rgba(63,182,255,.15);
+  }
+  .login-card h2{margin:0 0 6px;font-size:20px;}
+  .login-card p{color:var(--muted);font-size:13px;margin:0 0 22px;}
+  .login-btn{
+    display:block;width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:14px 16px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    margin-bottom:12px;
+    text-align:left;
+  }
+  .login-btn small{display:block;color:var(--muted);font-weight:400;font-size:11px;margin-top:3px;}
+  .login-btn:hover{border-color:var(--accent);}
+
+  /* role badge shown in header after login */
+  .role-badge{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:12px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .role-badge button{
+    background:none;border:none;color:var(--accent);
+    cursor:pointer;font-size:11px;font-weight:700;padding:0;
+  }
+
+  /* ---------- TWO-BUILDING HOLOGRAM GRID ---------- */
+  .hologram-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:760px){ .hologram-grid{grid-template-columns:1fr;} }
+  .hologram-block{display:flex;flex-direction:column;align-items:center;}
+  .hologram-block-title{
+    font-size:14px;font-weight:700;color:var(--accent);
+    margin-bottom:2px;
+  }
+  .hologram-block-sub{font-size:11px;color:var(--muted);margin-bottom:10px;}
+
+  .hologram-legend{
+    display:flex;gap:18px;flex-wrap:wrap;justify-content:center;
+    margin-top:16px;padding-top:14px;border-top:1px solid var(--border);
+  }
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
+  .legend-dot{width:10px;height:10px;border-radius:50%;}
+  .legend-dot.Critical{background:var(--critical);box-shadow:0 0 6px var(--critical);}
+  .legend-dot.High{background:var(--high);box-shadow:0 0 6px var(--high);}
+  .legend-dot.Medium{background:var(--medium);box-shadow:0 0 6px var(--medium);}
+  .legend-dot.Low{background:var(--low);box-shadow:0 0 6px var(--low);}
+
+  /* ---------- CRITICAL ALERT SIREN BANNER ---------- */
+  .critical-alert-banner{
+    position:fixed;
+    top:0;left:0;right:0;
+    background:linear-gradient(90deg, #7a0000, #ff2d2d, #7a0000);
+    background-size:200% 100%;
+    color:#fff;
+    padding:14px 20px;
+    font-weight:800;
+    font-size:13px;
+    letter-spacing:.3px;
+    text-align:center;
+    z-index:10000;
+    box-shadow:0 0 30px rgba(255,0,0,.6);
+    animation:sirenSweep 1s linear infinite, slideDown .3s ease-out;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  @keyframes sirenSweep{
+    0%{background-position:0% 0%;}
+    100%{background-position:200% 0%;}
+  }
+  @keyframes slideDown{
+    from{transform:translateY(-100%);}
+    to{transform:translateY(0);}
+  }
+  .critical-alert-banner button{
+    background:rgba(255,255,255,.2);
+    border:1px solid rgba(255,255,255,.6);
+    color:#fff;
+    padding:4px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:12px;
+    font-weight:700;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN SCREEN ===================== -->
+<!-- This is a simple DEMO login: it does not check a password or talk to
+     a server (there is no server). It just asks "which role are you
+     using this app as?" and remembers your choice for this session.
+     It's here to show the DIFFERENT views a student vs. a staff
+     responder would see, not real authentication/security. -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h2>Welcome to CampusCare</h2>
+    <p>Choose how you'd like to continue</p>
+    <button class="login-btn" onclick="loginAs('user')">
+      Login as Student / User
+      <small>Report incidents, view status and the campus hologram</small>
+    </button>
+    <button class="login-btn" onclick="loginAs('responder')">
+      Login as Responder / Staff
+      <small>Full dashboard: assign, respond, resolve incidents</small>
+    </button>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>Campus<span>Care</span></h1>
+    <p>Campus Incident Response Dashboard</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <div class="role-badge" id="roleBadge" style="display:none;">
+      <span id="roleBadgeText"></span>
+      <button onclick="showLogin()">Switch Role</button>
+    </div>
+    <p id="clock" style="color:var(--muted);font-size:13px;margin:0;"></p>
+  </div>
+</header>
+
+<!-- ===================== SUMMARY STRIP ===================== -->
+<div class="summary">
+  <div class="card"><div class="num" id="sumTotal">0</div><div class="label">Total Incidents</div></div>
+  <div class="card"><div class="num" id="sumActive">0</div><div class="label">Active Incidents</div></div>
+  <div class="card"><div class="num" id="sumResolved">0</div><div class="label">Resolved</div></div>
+  <div class="card"><div class="num" id="sumWaiting">0</div><div class="label">Waiting for Responder</div></div>
+</div>
+
+<!-- ===================== HOLOGRAM BUILDING VISUAL ===================== -->
+<section class="panel">
+  <h2>Live Campus Hologram</h2>
+  <div class="hologram-grid">
+
+    <div class="hologram-block">
+      <div class="hologram-block-title">EB <span id="hologramCount-EB" style="color:var(--muted);font-weight:400;"></span></div>
+      <div class="hologram-block-sub">Building EB</div>
+      <div class="hologram-wrap">
+        <div class="hologram-building" id="hologramBuilding-EB">
+          <div class="scanline"></div>
+          <!-- Floor rows generated by buildHologramFloors() -->
+        </div>
+        <div class="hologram-base"></div>
+      </div>
+    </div>
+
+    <div class="hologram-block">
+      <div class="hologram-block-title">NB <span id="hologramCount-NB" style="color:var(--muted);font-weight:400;"></span></div>
+      <div class="hologram-block-sub">Building NB</div>
+      <div class="hologram-wrap">
+        <div class="hologram-building" id="hologramBuilding-NB">
+          <div class="scanline"></div>
+          <!-- Floor rows generated by buildHologramFloors() -->
+        </div>
+        <div class="hologram-base"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="hologram-legend">
+    <div class="legend-item"><span class="legend-dot Critical"></span>Critical</div>
+    <div class="legend-item"><span class="legend-dot High"></span>High</div>
+    <div class="legend-item"><span class="legend-dot Medium"></span>Medium</div>
+    <div class="legend-item"><span class="legend-dot Low"></span>Low</div>
+  </div>
+  <div class="chat-hint" style="text-align:center;">Each dot is one active incident, placed on the building and floor you selected when reporting it.</div>
+</section>
+
+<div class="layout">
+
+  <!-- LEFT COLUMN: report form + active incident dashboard -->
+  <div>
+    <section class="panel">
+      <h2>Report a New Incident</h2>
+      <form class="report-form" id="reportForm">
+        <div>
+          <label>Incident Type</label>
+          <select id="inType">
+            <option value="Fire">Fire</option>
+            <option value="Medical">Medical</option>
+            <option value="Theft">Theft</option>
+            <option value="Electrical">Electrical</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label>Building</label>
+          <select id="inBuilding">
+            <option value="EB">EB</option>
+            <option value="NB">NB</option>
+          </select>
+        </div>
+        <div>
+          <label>Floor</label>
+          <select id="inFloor">
+            <option value="0">Ground Floor</option>
+            <option value="1" selected>1st Floor</option>
+            <option value="2">2nd Floor</option>
+            <option value="3">3rd Floor</option>
+            <option value="4">4th Floor</option>
+            <option value="5">5th Floor</option>
+          </select>
+        </div>
+        <div>
+          <label>Specific Location (room / area)</label>
+          <input type="text" id="inLocation" placeholder="e.g. Library" required>
+        </div>
+        <div>
+          <label>Time</label>
+          <input type="text" id="inTime" placeholder="e.g. 10:45 AM">
+        </div>
+        <div>
+          <label>Description</label>
+          <textarea id="inDesc" placeholder="Describe what is happening..." required></textarea>
+        </div>
+        <button type="submit">Report Incident</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Active Incident Dashboard</h2>
+      <div id="activeList"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Incident History (Resolved)</h2>
+      <table>
+        <thead>
+          <tr><th>Type</th><th>Location</th><th>Priority</th><th>Responder</th><th>Resolved At</th></tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+      <div id="historyEmpty" class="empty" style="display:none;">No resolved incidents yet.</div>
+    </section>
+  </div>
+
+  <!-- RIGHT COLUMN: responders -->
+  <div>
+    <section class="panel" id="responderPanel">
+      <h2>Responders</h2>
+      <div id="responderList"></div>
+    </section>
+
+    <section class="panel">
+      <h2>AI Assistant</h2>
+      <div class="chat-log" id="chatLog"></div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Ask about incidents, priority, responders...">
+        <button id="chatSendBtn">Ask</button>
+      </div>
+      <div class="chat-hint">Try: "highest priority", "who is available", "what do I do for a fire", "waiting incidents"</div>
+    </section>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   JAVASCRIPT: this section controls BEHAVIOR / LOGIC.
+   Everything below uses only variables, arrays, objects,
+   if/else, loops and functions -- the same building blocks
+   you already know from C.
+============================================================ */
+
+// ---------- DATA ----------
+// Every incident is just an object (like a C struct) stored in an array.
+// Every responder is also an object stored in an array.
+
+let incidents = [];      // all incidents (active + waiting + resolved)
+let responders = [];     // all responders
+let nextIncidentId = 1;  // simple counter used to create unique IDs
+
+// Priority ranking used for sorting (higher number = more urgent)
+const PRIORITY_RANK = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+
+// ---------- LOGIN / ROLES ----------
+// This is a simple DEMO login -- there is no server, no password check,
+// nothing is "secure." It's just a variable that remembers which role
+// you picked, and a function that shows/hides parts of the page based
+// on that variable. It exists to demonstrate that a student and a staff
+// responder should see DIFFERENT views of the same data.
+let currentRole = "responder"; // default so the page isn't empty before login
+let appStarted = false; // becomes true after initial sample data is loaded --
+                         // prevents the voice alert from firing on page load
+
+function loginAs(role){
+  currentRole = role;
+  document.getElementById("loginOverlay").style.display = "none";
+
+  const badge = document.getElementById("roleBadge");
+  const badgeText = document.getElementById("roleBadgeText");
+  badge.style.display = "flex";
+  badgeText.textContent = (role === "responder") ? "Staff Responder" : "Student / User";
+
+  updateRoleUI();
+  render();
+}
+
+function showLogin(){
+  document.getElementById("loginOverlay").style.display = "flex";
+}
+
+// Shows/hides the parts of the page that only Responders should use.
+// Students can still report incidents and watch the dashboard/hologram,
+// but they can't change an incident's status -- only staff can.
+function updateRoleUI(){
+  const responderPanel = document.getElementById("responderPanel");
+  responderPanel.style.display = (currentRole === "responder") ? "block" : "none";
+}
+
+// ---------- SECURITY FIX: escape user-typed text before inserting into HTML ----------
+// Without this, someone could type something like <img src=x onerror=alert(1)>
+// into the Description box and the browser would RUN it instead of showing it
+// as plain text. This function turns dangerous characters into safe text.
+function escapeHtml(value){
+  if(value === null || value === undefined) return "";
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// ============================================================
+// CRITICAL ALERT SYSTEM (siren banner + spoken voice alert)
+// ------------------------------------------------------------
+// Whenever a NEW incident is reported with Critical priority, two
+// things fire at once:
+//   1. A red pulsing "siren" banner slides down across the top of
+//      the whole page showing what happened and where.
+//   2. The browser's BUILT-IN text-to-speech engine (the
+//      SpeechSynthesis API -- native to the browser, not an
+//      external service, works fully offline) SPEAKS the alert
+//      out loud.
+// A card quietly turning red at the bottom of a list is easy to
+// miss. A banner + a voice saying "Critical alert" is not.
+// ============================================================
+function triggerCriticalAlert(incident){
+  // ---- Visual: siren banner ----
+  const existing = document.getElementById("criticalAlertBanner");
+  if(existing) existing.remove(); // replace any alert already on screen
+
+  const banner = document.createElement("div");
+  banner.id = "criticalAlertBanner";
+  banner.className = "critical-alert-banner";
+  banner.innerHTML =
+    "🚨 CRITICAL INCIDENT: " + escapeHtml(incident.type) + " at " +
+    escapeHtml(incident.location) + " (" + escapeHtml(incident.building) + ", " +
+    escapeHtml(FLOOR_NAMES[incident.floor]) + ") 🚨" +
+    '<button onclick="document.getElementById(\'criticalAlertBanner\').remove()">Dismiss</button>';
+  document.body.appendChild(banner);
+
+  // Auto-remove after 8 seconds if nobody dismisses it manually
+  setTimeout(function(){
+    const el = document.getElementById("criticalAlertBanner");
+    if(el) el.remove();
+  }, 8000);
+
+  // ---- Audio: speak the alert out loud ----
+  if("speechSynthesis" in window){
+    const message = "Critical alert. " + incident.type + " reported at " +
+      incident.location + ", building " + incident.building + ", " +
+      FLOOR_NAMES[incident.floor] + ". Immediate response required.";
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  }
+}
+
+// ---------- STEP 1: AUTOMATIC PRIORITY ----------
+// This function looks at the incident type AND the description text
+// and decides how urgent the incident is. This is a simple rule-based
+// system -- like a chain of if/else statements in C.
+function calculatePriority(type, description){
+  const text = description.toLowerCase();
+
+  // Keywords that ALWAYS mean "this is an emergency" no matter the type
+  const criticalKeywords = ["fire","explosion","weapon","gun","unconscious","not breathing","severe bleeding"];
+  for(let i = 0; i < criticalKeywords.length; i++){
+    if(text.includes(criticalKeywords[i])){
+      return "Critical";
+    }
+  }
+
+  // Otherwise, base priority comes from the incident type
+  if(type === "Fire")       return "Critical";
+  if(type === "Medical")    return "High";
+  if(type === "Theft")      return "Medium";
+  if(type === "Electrical") return "Medium";
+  return "Low"; // "Other" and anything unrecognised
+}
+
+// ---------- STEP 2: WHICH RESPONDER TYPE DOES THIS INCIDENT NEED ----------
+function requiredResponderType(incidentType){
+  if(incidentType === "Fire")       return "Security";   // security handles evacuation/emergency response
+  if(incidentType === "Theft")      return "Security";
+  if(incidentType === "Medical")    return "Medical";
+  if(incidentType === "Electrical") return "Maintenance";
+  return "Security"; // default for "Other"
+}
+
+// ---------- STEP 3: RECOMMENDED ACTION TEXT ----------
+function recommendedAction(incidentType){
+  if(incidentType === "Fire")       return "Evacuate the area and contact emergency/security response.";
+  if(incidentType === "Medical")    return "Contact medical responder and secure the area.";
+  if(incidentType === "Theft")      return "Assign security and preserve the area/evidence.";
+  if(incidentType === "Electrical") return "Assign maintenance and isolate the affected area.";
+  return "Assess the situation and assign the appropriate responder.";
+}
+
+// ---------- STEP 4: TRY TO ASSIGN A RESPONDER TO ONE INCIDENT ----------
+// Looks through the responders array for an AVAILABLE responder of the
+// correct type. If one is found, it is assigned. If not, the incident
+// is marked "Waiting".
+function tryAssignResponder(incident){
+  const neededType = requiredResponderType(incident.type);
+
+  for(let i = 0; i < responders.length; i++){
+    const r = responders[i];
+    if(r.type === neededType && r.available === true){
+      // Found a free responder of the right type -> assign it
+      r.available = false;
+      r.assignedIncidentId = incident.id;
+      incident.responderName = r.name;
+      incident.status = "Assigned";
+      return true;
+    }
+  }
+
+  // No available responder of the right type was found
+  incident.responderName = null;
+  incident.status = "Waiting";
+  return false;
+}
+
+// ---------- BUG FIX: PRIORITY QUEUE / PREEMPTION ----------
+// tryAssignResponder() above only hands out responders who are FREE right
+// now. That is not enough: if a Medium incident grabs the only responder
+// first, and a Critical incident is reported a moment later, the Critical
+// one would just sit in "Waiting" forever -- even though it should be more
+// important than the Medium one that already has the responder.
+//
+// assignResponder() fixes this. It is now the function we call whenever a
+// NEW incident needs a responder:
+//   1. First, try to find a responder who is simply available (easy case).
+//   2. If none is free, look at responders of the right type who ARE busy.
+//      Find the one working on the LOWEST-priority incident.
+//   3. If that busy incident's priority is lower than the new incident's
+//      priority, "preempt" it: take the responder away, put the weaker
+//      incident back into "Waiting", and give the responder to the new,
+//      more urgent incident.
+//   4. Otherwise, the new incident goes into "Waiting" like before.
+function assignResponder(incident){
+  // Step 1: easy case -- is any responder simply available?
+  if(tryAssignResponder(incident)){
+    return;
+  }
+
+  // Step 2: no one is free. Look for the weakest (lowest priority)
+  // incident currently being handled by a responder of the needed type.
+  const neededType = requiredResponderType(incident.type);
+  let weakestResponder = null;
+  let weakestIncident = null;
+
+  for(let i = 0; i < responders.length; i++){
+    const r = responders[i];
+    if(r.type === neededType && r.available === false){
+      const busyIncident = findIncidentById(r.assignedIncidentId);
+      if(busyIncident){
+        if(weakestIncident === null || PRIORITY_RANK[busyIncident.priority] < PRIORITY_RANK[weakestIncident.priority]){
+          weakestIncident = busyIncident;
+          weakestResponder = r;
+        }
+      }
+    }
+  }
+
+  // Step 3: only preempt if the new incident truly outranks the weakest one
+  if(weakestIncident !== null && PRIORITY_RANK[incident.priority] > PRIORITY_RANK[weakestIncident.priority]){
+    // Take the responder away from the weaker incident
+    weakestIncident.status = "Waiting";
+    weakestIncident.responderName = null;
+
+    // Give it to the new, more urgent incident
+    weakestResponder.assignedIncidentId = incident.id;
+    incident.responderName = weakestResponder.name;
+    incident.status = "Assigned";
+  } else {
+    // Step 4: nothing to preempt -- wait like normal
+    incident.status = "Waiting";
+    incident.responderName = null;
+  }
+}
+
+// ---------- STEP 5: THE COMPETITION / QUEUE LOGIC ----------
+// This is the core feature: when responders are limited, the incident
+// with the HIGHEST priority gets the responder first. Whenever a
+// responder becomes free, we look through ALL waiting incidents and
+// give the freed-up responder to the most urgent one still waiting.
+function reassignWaitingIncidents(){
+  // Collect every incident currently in "Waiting" status
+  let waiting = incidents.filter(function(inc){ return inc.status === "Waiting"; });
+
+  // Sort so the highest priority (and then earliest reported) comes first
+  waiting.sort(function(a, b){
+    if(PRIORITY_RANK[b.priority] !== PRIORITY_RANK[a.priority]){
+      return PRIORITY_RANK[b.priority] - PRIORITY_RANK[a.priority];
+    }
+    return a.id - b.id; // earlier incident wins ties
+  });
+
+  // Try to assign a responder to each waiting incident, in priority order
+  for(let i = 0; i < waiting.length; i++){
+    tryAssignResponder(waiting[i]);
+  }
+}
+
+// ---------- STEP 6: REPORTING A NEW INCIDENT ----------
+function addIncident(type, building, floor, location, time, description){
+  const priority = calculatePriority(type, description);
+
+  const incident = {
+    id: nextIncidentId,
+    type: type,
+    building: building,   // "EB" or "NB"
+    floor: floor,         // 0 (Ground) through 5
+    location: location,   // specific room/area, e.g. "Library"
+    time: time || "Not specified",
+    description: description,
+    priority: priority,
+    status: "Reported",
+    responderName: null,
+    resolvedAt: null
+  };
+  nextIncidentId++;
+
+  incidents.push(incident);
+
+  // Immediately try to give it a responder (this now includes preemption)
+  assignResponder(incident);
+
+  render();
+
+  // If this is a Critical incident (and not the initial sample data
+  // loading at startup), fire the siren banner + voice alert
+  if(appStarted && priority === "Critical"){
+    triggerCriticalAlert(incident);
+  }
+}
+
+// ---------- STEP 7: MOVING AN INCIDENT THROUGH ITS LIFECYCLE ----------
+// Lifecycle: Reported -> Assigned -> Responding -> Resolved
+function startResponding(id){
+  const incident = findIncidentById(id);
+  if(incident){
+    incident.status = "Responding";
+    render();
+  }
+}
+
+function resolveIncident(id){
+  const incident = findIncidentById(id);
+  if(!incident) return;
+
+  incident.status = "Resolved";
+  incident.resolvedAt = new Date().toLocaleTimeString();
+
+  // Free up the responder that was working on this incident
+  for(let i = 0; i < responders.length; i++){
+    if(responders[i].assignedIncidentId === id){
+      responders[i].available = true;
+      responders[i].assignedIncidentId = null;
+    }
+  }
+
+  // Now that a responder is free, see if anyone is waiting for one
+  reassignWaitingIncidents();
+
+  render();
+}
+
+function findIncidentById(id){
+  for(let i = 0; i < incidents.length; i++){
+    if(incidents[i].id === id) return incidents[i];
+  }
+  return null;
+}
+
+// ---------- RENDERING (drawing everything on screen) ----------
+// These functions don't contain any "decision making" logic --
+// they just read the current data and turn it into HTML.
+
+function render(){
+  renderSummary();
+  renderActiveIncidents();
+  renderHistory();
+  renderResponders();
+  renderHologram();
+}
+
+function renderSummary(){
+  const total = incidents.length;
+  const resolved = incidents.filter(i => i.status === "Resolved").length;
+  const waiting = incidents.filter(i => i.status === "Waiting").length;
+  const active = total - resolved;
+
+  document.getElementById("sumTotal").textContent = total;
+  document.getElementById("sumActive").textContent = active;
+  document.getElementById("sumResolved").textContent = resolved;
+  document.getElementById("sumWaiting").textContent = waiting;
+}
+
+function renderActiveIncidents(){
+  const container = document.getElementById("activeList");
+  container.innerHTML = "";
+
+  // Active = not resolved. Show most urgent first.
+  let active = incidents.filter(i => i.status !== "Resolved");
+  active.sort((a, b) => PRIORITY_RANK[b.priority] - PRIORITY_RANK[a.priority]);
+
+  if(active.length === 0){
+    container.innerHTML = '<div class="empty">No active incidents. All clear.</div>';
+    return;
+  }
+
+  for(let i = 0; i < active.length; i++){
+    const inc = active[i];
+
+    const card = document.createElement("div");
+    card.className = "incident " + inc.priority;
+
+    let buttonsHtml = "";
+    if(currentRole === "responder"){
+      // Only staff responders can move an incident through its lifecycle
+      if(inc.status === "Assigned"){
+        buttonsHtml = '<button class="primary" onclick="startResponding(' + inc.id + ')">Start Responding</button>';
+      } else if(inc.status === "Responding"){
+        buttonsHtml = '<button class="primary" onclick="resolveIncident(' + inc.id + ')">Mark Resolved</button>';
+      } else if(inc.status === "Waiting"){
+        buttonsHtml = '<span style="color:var(--muted);font-size:12px;">Waiting for a free responder...</span>';
+      }
+    } else {
+      // Students/users get a read-only status note instead of action buttons
+      buttonsHtml = '<span style="color:var(--muted);font-size:12px;">Status is managed by campus staff.</span>';
+    }
+
+    card.innerHTML =
+      '<div class="incident-top">' +
+        '<div class="incident-title">' + escapeHtml(inc.type) + ' &mdash; ' + escapeHtml(inc.location) + '</div>' +
+        '<div><span class="badge ' + inc.priority + '">' + inc.priority + '</span> ' +
+        '<span class="status-pill">' + inc.status + '</span></div>' +
+      '</div>' +
+      '<div class="incident-meta">' +
+        'Building: ' + escapeHtml(inc.building) + ' &nbsp;|&nbsp; Floor: ' + escapeHtml(FLOOR_NAMES[inc.floor]) + '<br>' +
+        'Time: ' + escapeHtml(inc.time) + ' &nbsp;|&nbsp; Responder: ' + escapeHtml(inc.responderName ? inc.responderName : 'Unassigned') + '<br>' +
+        escapeHtml(inc.description) +
+      '</div>' +
+      '<div class="incident-action">Recommended: ' + recommendedAction(inc.type) + '</div>' +
+      '<div class="incident-buttons">' + buttonsHtml + '</div>';
+
+    container.appendChild(card);
+  }
+}
+
+function renderHistory(){
+  const body = document.getElementById("historyBody");
+  const emptyMsg = document.getElementById("historyEmpty");
+  body.innerHTML = "";
+
+  const resolved = incidents.filter(i => i.status === "Resolved");
+
+  if(resolved.length === 0){
+    emptyMsg.style.display = "block";
+    return;
+  }
+  emptyMsg.style.display = "none";
+
+  for(let i = 0; i < resolved.length; i++){
+    const inc = resolved[i];
+    const row = document.createElement("tr");
+    row.innerHTML =
+      "<td>" + escapeHtml(inc.type) + "</td>" +
+      "<td>" + escapeHtml(inc.location) + "</td>" +
+      '<td><span class="badge ' + inc.priority + '">' + inc.priority + "</span></td>" +
+      "<td>" + escapeHtml(inc.responderName || "-") + "</td>" +
+      "<td>" + escapeHtml(inc.resolvedAt) + "</td>";
+    body.appendChild(row);
+  }
+}
+
+function renderResponders(){
+  const container = document.getElementById("responderList");
+  container.innerHTML = "";
+
+  for(let i = 0; i < responders.length; i++){
+    const r = responders[i];
+    const row = document.createElement("div");
+    row.className = "responder";
+
+    let statusHtml;
+    if(r.available){
+      statusHtml = '<span class="avail">Available</span>';
+    } else {
+      const inc = findIncidentById(r.assignedIncidentId);
+      const label = inc ? (" (#" + inc.id + " " + escapeHtml(inc.type) + ")") : "";
+      statusHtml = '<span class="busy">Assigned' + label + '</span>';
+    }
+
+    row.innerHTML =
+      '<div><div class="name">' + r.name + '</div><div class="type">' + r.type + '</div></div>' +
+      statusHtml;
+
+    container.appendChild(row);
+  }
+}
+
+// ---------- FORM HANDLING ----------
+document.getElementById("reportForm").addEventListener("submit", function(e){
+  e.preventDefault(); // stop the page from reloading (default browser behavior)
+
+  const type = document.getElementById("inType").value;
+  const building = document.getElementById("inBuilding").value;
+  const floor = parseInt(document.getElementById("inFloor").value, 10);
+  const location = document.getElementById("inLocation").value;
+  const time = document.getElementById("inTime").value;
+  const desc = document.getElementById("inDesc").value;
+
+  addIncident(type, building, floor, location, time, desc);
+
+  // Clear the form for the next report
+  document.getElementById("inLocation").value = "";
+  document.getElementById("inTime").value = "";
+  document.getElementById("inDesc").value = "";
+});
+
+// ---------- CLOCK (just for visual polish, not core logic) ----------
+function updateClock(){
+  document.getElementById("clock").textContent = new Date().toLocaleString();
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ============================================================
+// AI ASSISTANT (rule-based / keyword-matching "chatbot")
+// ------------------------------------------------------------
+// This is NOT a real machine-learning model -- it's the same
+// technique we already used for calculatePriority(): read the
+// text, check for keywords with if/else, and respond based on
+// which keyword matched. This is a real, legitimate AI technique
+// called a "rule-based expert system." The difference from
+// calculatePriority() is just that this one answers questions
+// instead of assigning a priority -- and it reads LIVE data from
+// the incidents/responders arrays, so its answers are always
+// up to date with what's happening on the dashboard right now.
+// ============================================================
+
+function appendChatMessage(sender, text){
+  const log = document.getElementById("chatLog");
+  const msg = document.createElement("div");
+  msg.className = "chat-msg " + sender; // "bot" or "user"
+  msg.textContent = text; // textContent is used (not innerHTML) so chat
+                           // input can NEVER inject HTML/script -- same
+                           // security fix as the rest of the app.
+  log.appendChild(msg);
+  log.scrollTop = log.scrollHeight; // auto-scroll to newest message
+}
+
+// This function looks at what the user typed and decides how to answer.
+// It's a chain of if/else checks on keywords -- exactly like
+// calculatePriority(), just applied to questions instead of incidents.
+function getBotReply(question){
+  const q = question.toLowerCase();
+
+  const active = incidents.filter(i => i.status !== "Resolved");
+  const waiting = incidents.filter(i => i.status === "Waiting");
+  const resolved = incidents.filter(i => i.status === "Resolved");
+
+  // --- Highest priority / most urgent incident ---
+  if(q.includes("highest") || q.includes("urgent") || q.includes("critical")){
+    if(active.length === 0) return "There are no active incidents right now. All clear.";
+    let top = active[0];
+    for(let i = 0; i < active.length; i++){
+      if(PRIORITY_RANK[active[i].priority] > PRIORITY_RANK[top.priority]) top = active[i];
+    }
+    return "The highest priority active incident is #" + top.id + " (" + top.type + " at " +
+           top.location + ", " + top.building + " " + FLOOR_NAMES[top.floor] + "), priority " + top.priority + ", status " + top.status + ".";
+  }
+
+  // --- Who is available ---
+  if(q.includes("available") || q.includes("free responder")){
+    const freeOnes = responders.filter(r => r.available);
+    if(freeOnes.length === 0) return "No responders are available right now -- everyone is assigned.";
+    return "Available responders: " + freeOnes.map(r => r.name + " (" + r.type + ")").join(", ") + ".";
+  }
+
+  // --- Waiting incidents ---
+  if(q.includes("waiting") || q.includes("queue")){
+    if(waiting.length === 0) return "No incidents are waiting for a responder right now.";
+    return "Incidents currently waiting: " + waiting.map(i => "#" + i.id + " " + i.type + " (" + i.priority + ")").join(", ") + ".";
+  }
+
+  // --- Counts / summary ---
+  if(q.includes("how many") || q.includes("count") || q.includes("summary")){
+    return "Total: " + incidents.length + " | Active: " + active.length +
+           " | Waiting: " + waiting.length + " | Resolved: " + resolved.length + ".";
+  }
+
+  // --- Recommended action per incident type ---
+  if(q.includes("fire"))       return "For a Fire: " + recommendedAction("Fire");
+  if(q.includes("medical"))    return "For a Medical incident: " + recommendedAction("Medical");
+  if(q.includes("theft"))      return "For a Theft: " + recommendedAction("Theft");
+  if(q.includes("electrical")) return "For an Electrical incident: " + recommendedAction("Electrical");
+
+  // --- Resolved / history ---
+  if(q.includes("resolved") || q.includes("history")){
+    return "So far, " + resolved.length + " incident(s) have been resolved.";
+  }
+
+  // --- Greeting / help ---
+  if(q.includes("help") || q.includes("what can you")){
+    return "I can tell you: the highest priority incident, which responders are available, " +
+           "which incidents are waiting, incident counts, or the recommended action for Fire, " +
+           "Medical, Theft, or Electrical incidents.";
+  }
+  if(q.includes("hello") || q.includes("hi")){
+    return "Hello! Ask me about active incidents, priorities, or responder availability.";
+  }
+
+  // --- Fallback if nothing matched ---
+  return "I'm not sure about that. Try asking: \"highest priority\", \"who is available\", " +
+         "\"waiting incidents\", or \"what do I do for a fire\".";
+}
+
+function handleChatSend(){
+  const input = document.getElementById("chatInput");
+  const question = input.value.trim();
+  if(question === "") return;
+
+  appendChatMessage("user", question);
+  const reply = getBotReply(question);
+  appendChatMessage("bot", reply);
+
+  input.value = "";
+}
+
+document.getElementById("chatSendBtn").addEventListener("click", handleChatSend);
+document.getElementById("chatInput").addEventListener("keydown", function(e){
+  if(e.key === "Enter") handleChatSend();
+});
+
+// ============================================================
+// HOLOGRAM BUILDING VISUAL (two buildings: EB and NB)
+// ------------------------------------------------------------
+// This is pure visual flair layered on top of the same data you
+// already have -- it does not add any new decisions. Because the
+// report form now has explicit "Building" and "Floor" dropdowns,
+// we don't need to guess anything from text anymore -- we just
+// read incident.building and incident.floor directly. That makes
+// the hologram both simpler AND more reliable/readable.
+//
+//   1. buildHologramFloors() runs ONCE when the page loads. For
+//      EACH building (EB and NB), it creates 6 floor rows
+//      (Ground through 5th) and gives each one an empty "marker
+//      container" div with a predictable id, e.g. "floorMarkers-EB-2".
+//   2. renderHologram() runs every time render() runs. It clears
+//      old dots, then loops through every ACTIVE incident and drops
+//      a glowing dot + label into the matching building+floor's
+//      marker container.
+// ============================================================
+
+const BUILDINGS = ["EB", "NB"];
+const TOTAL_FLOORS = 5; // floors 0 (Ground) through 5
+const FLOOR_NAMES = ["Ground Floor","1st Floor","2nd Floor","3rd Floor","4th Floor","5th Floor"];
+
+// Turns a piece of text into a repeatable number between 15 and 85.
+// This just spreads dots out sideways on the floor so they don't all
+// stack in exactly the same spot -- it is NOT random (same location
+// text always lands in the same place), just like C's simple hashing.
+function hashToPercent(text){
+  let sum = 0;
+  for(let i = 0; i < text.length; i++){
+    sum += text.charCodeAt(i);
+  }
+  return (sum % 70) + 15; // keeps the dot away from the very edges
+}
+
+// Build the 6 floor rows for BOTH buildings once, top floor to Ground,
+// so each looks like a real building.
+function buildHologramFloors(){
+  for(let b = 0; b < BUILDINGS.length; b++){
+    const buildingCode = BUILDINGS[b];
+    const buildingEl = document.getElementById("hologramBuilding-" + buildingCode);
+
+    for(let f = TOTAL_FLOORS; f >= 0; f--){
+      const floorDiv = document.createElement("div");
+      floorDiv.className = "floor";
+
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "floor-label";
+      labelSpan.textContent = FLOOR_NAMES[f];
+
+      const markerContainer = document.createElement("div");
+      markerContainer.className = "floor-markers";
+      markerContainer.id = "floorMarkers-" + buildingCode + "-" + f;
+
+      floorDiv.appendChild(labelSpan);
+      floorDiv.appendChild(markerContainer);
+      buildingEl.appendChild(floorDiv);
+    }
+  }
+}
+
+// Runs every time render() runs: wipes old dots and redraws current ones.
+function renderHologram(){
+  // Step 1: clear every floor in both buildings
+  for(let b = 0; b < BUILDINGS.length; b++){
+    for(let f = 0; f <= TOTAL_FLOORS; f++){
+      const container = document.getElementById("floorMarkers-" + BUILDINGS[b] + "-" + f);
+      if(container) container.innerHTML = "";
+    }
+  }
+
+  const active = incidents.filter(i => i.status !== "Resolved");
+
+  // Step 2: count active incidents per building (shown next to the title)
+  for(let b = 0; b < BUILDINGS.length; b++){
+    const count = active.filter(i => i.building === BUILDINGS[b]).length;
+    const countEl = document.getElementById("hologramCount-" + BUILDINGS[b]);
+    if(countEl) countEl.textContent = "(" + count + " active)";
+  }
+
+  // Step 3: place one dot per active incident, directly using its
+  // stored building + floor -- no guessing needed.
+  for(let i = 0; i < active.length; i++){
+    const inc = active[i];
+    const container = document.getElementById("floorMarkers-" + inc.building + "-" + inc.floor);
+    if(!container) continue;
+
+    const xPercent = hashToPercent(inc.location);
+
+    const dot = document.createElement("div");
+    dot.className = "marker " + inc.priority; // color comes from CSS based on priority
+    dot.style.left = xPercent + "%";
+    dot.title = inc.type + " - " + inc.priority; // native browser tooltip on hover
+
+    const label = document.createElement("div");
+    label.className = "marker-label";
+    label.style.left = xPercent + "%";
+    label.textContent = inc.location; // textContent = safe from injection
+
+    container.appendChild(dot);
+    container.appendChild(label);
+  }
+}
+
+// ---------- SAMPLE DATA (so the app looks alive when opened) ----------
+function loadSampleData(){
+  responders.push({ name: "Officer Sharma", type: "Security",    available: true, assignedIncidentId: null });
+  responders.push({ name: "Officer Khan",    type: "Security",    available: true, assignedIncidentId: null });
+  responders.push({ name: "Nurse Patel",     type: "Medical",     available: true, assignedIncidentId: null });
+  responders.push({ name: "Tech Verma",      type: "Maintenance", available: true, assignedIncidentId: null });
+
+  // These are added in order, so you can see the queueing feature happen:
+  // Two Security-only responders exist, and THREE incidents below need Security.
+  addIncident("Fire",       "EB", 2, "Library",         "10:02 AM", "Smoke detected near the server room");
+  addIncident("Theft",      "NB", 1, "Hostel Block A",   "10:10 AM", "Laptop stolen from room 204");
+  addIncident("Medical",    "NB", 0, "Gym",              "10:14 AM", "Student fainted during workout");
+  addIncident("Theft",      "NB", 0, "Parking Lot",      "10:18 AM", "Bike theft in progress"); // this one should end up Waiting
+  addIncident("Electrical", "EB", 3, "Lab 3",            "10:20 AM", "Sparking wires near a workstation");
+}
+
+buildHologramFloors();
+loadSampleData();
+render();
+appStarted = true; // from now on, new Critical incidents trigger the alert
+appendChatMessage("bot", "Hi, I'm the CampusCare Assistant. Ask me about priorities, responders, or waiting incidents.");
+</script>
+
+</body>
+</html>
