@@ -357,6 +357,38 @@ body.over3d{cursor:pointer}
 section .wrap{perspective:1400px}
 .track span{display:inline-block;transform:skewX(var(--sk,0deg))}
 
+
+/* ---------- added portfolio depth: toolkit, build process, current focus ---------- */
+.added-section{position:relative;z-index:1;padding:6rem 0}
+.added-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.skills-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.skill-tags{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.1rem}
+.skill-tags span{display:inline-flex;align-items:center;gap:.4rem;padding:.42rem .72rem;border-radius:999px;border:1px solid rgba(124,242,201,.19);background:linear-gradient(135deg,rgba(124,242,201,.075),rgba(157,123,255,.075));font-size:.84rem;color:var(--text)}
+.skill-tags span::before{content:"✦";font-size:.62rem;color:var(--mint)}
+.skill-level{display:inline-flex;align-items:center;gap:.45rem;color:var(--muted);font-size:.78rem;margin-top:.85rem}
+.skill-level::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 12px rgba(124,242,201,.7)}
+.added-card{border-radius:var(--r-lg);padding:1.65rem;min-height:100%;transition:transform .3s,border-color .3s,box-shadow .3s}
+.added-card:hover{transform:translateY(-6px);border-color:rgba(124,242,201,.42);box-shadow:0 25px 65px -28px rgba(91,92,255,.35)}
+.added-kicker{display:flex;align-items:center;gap:.6rem;color:var(--mint);font-size:.82rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:1rem}
+.added-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:rgba(157,123,255,.14);border:1px solid rgba(157,123,255,.28);font-size:1.25rem;margin-bottom:1rem}
+.added-card h3{font-size:1.35rem;margin-bottom:.65rem}
+.added-card p{color:var(--muted);font-size:.97rem}
+.added-tags{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.1rem}
+.added-tags span{font-size:.82rem;padding:.3rem .7rem;border-radius:99px;border:1px solid var(--glass-b);background:rgba(255,255,255,.045);color:var(--text)}
+.added-project{display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:start}
+.added-project .arrow{font-size:1.35rem;color:var(--mint)}
+.added-note{margin-top:1.3rem;color:var(--muted);font-size:.9rem}
+.build-loop{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.9rem;counter-reset:build}
+.build-step{position:relative;border-radius:var(--r-md);padding:1.35rem;counter-increment:build}
+.build-step::before{content:"0" counter(build);display:block;color:var(--signal);font-family:var(--display);font-weight:800;font-size:1.7rem;margin-bottom:1rem}
+.build-step h3{font-size:1.12rem;margin-bottom:.45rem}
+.build-step p{font-size:.92rem;color:var(--muted)}
+.focus-strip{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-radius:var(--r-lg);padding:1.5rem 1.7rem;margin-top:1.2rem}
+.focus-strip strong{font-family:var(--display);font-size:1.15rem}
+.focus-strip p{color:var(--muted);font-size:.95rem}
+@media(max-width:900px){.added-grid,.skills-grid{grid-template-columns:1fr}.build-loop{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.build-loop{grid-template-columns:1fr}.added-section{padding:4.5rem 0}}
+
 </style>
 </head>
 <body>
@@ -376,6 +408,8 @@ section .wrap{perspective:1400px}
       <a href="#skills">Skills</a>
       <a href="#projects">Projects</a>
       <a href="#journey">Journey</a>
+      <a href="#build-process">Build process</a>
+      <a href="#current-focus">Focus</a>
       <a href="#contact">Contact</a>
     </div>
   </div>
@@ -460,8 +494,8 @@ section .wrap{perspective:1400px}
 <section id="projects">
   <div class="wrap">
     <div class="sec-head reveal">
-      <h2>Featured project</h2>
-      <p class="sec-sub">A project I built to explore practical web development and problem solving.</p>
+      <h2>Completed projects</h2>
+      <p class="sec-sub">Live projects where I’ve turned ideas into interactive, usable web experiences.</p>
     </div>
     <div class="project-wrap reveal">
       <article class="project">
@@ -489,6 +523,18 @@ section .wrap{perspective:1400px}
         </div>
       </article>
     </div>
+    <article class="added-card glass reveal" style="margin-top:1.5rem">
+      <div class="added-project">
+        <div>
+          <div class="added-kicker">02 · Completed · Live web application</div>
+          <h3>SkillSphere</h3>
+          <p>A skill-gap and learning-roadmap platform that helps learners connect a target role with relevant skills, identify learning gaps, and organise progress into a structured learning path. It includes Supabase-backed sign-in and cloud data sync.</p>
+          <div class="added-tags"><span>HTML</span><span>CSS</span><span>JavaScript</span><span>Supabase</span><span>Cloud sync</span><span>Learning roadmaps</span><span>Progress tracking</span></div>
+          <div style="margin-top:1.3rem"><a class="btn primary magnet" href="https://kapildantil.github.io/Skill-Gap-Learning-Roadmap-Platform/" target="_blank" rel="noopener">View live project ↗</a></div>
+        </div>
+        <span class="arrow" aria-hidden="true">↗</span>
+      </div>
+    </article>
     <div class="soon glass reveal">
       <span style="font-size:1.8rem" aria-hidden="true">🛠️</span>
       <div><h3>More coming soon</h3><p>I'm continuing to build and experiment with new projects as I grow my development skills.</p></div>
@@ -508,6 +554,74 @@ section .wrap{perspective:1400px}
       <div class="step glass reveal"><h3>Programming</h3><p>Developing foundational knowledge in Python and C through practice and projects.</p></div>
       <div class="step glass reveal"><h3>Exploring AI &amp; modern development</h3><p>Learning about Python-based data/AI workflows and modern AI application development.</p></div>
     </div>
+  </div>
+</section>
+
+
+<section class="added-section" id="build-process">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <h2>How I build</h2>
+      <p class="sec-sub">A practical loop: learn a concept, turn it into something real, and improve it through testing and feedback.</p>
+    </div>
+    <div class="build-loop">
+      <article class="build-step glass reveal"><h3>Explore</h3><p>Understand the problem, research the basics, and break a big idea into smaller tasks.</p></article>
+      <article class="build-step glass reveal"><h3>Prototype</h3><p>Shape the layout and user flow before adding more complex behaviour.</p></article>
+      <article class="build-step glass reveal"><h3>Build & test</h3><p>Connect the interface to working logic, try real interactions, and debug what breaks.</p></article>
+      <article class="build-step glass reveal"><h3>Refine & share</h3><p>Polish the experience, document the project, and publish work so others can explore it.</p></article>
+    </div>
+    <div class="focus-strip glass reveal">
+      <div><strong>Curiosity → practice → progress</strong><p>I learn best by making useful projects and improving them one iteration at a time.</p></div>
+      <span class="badge">Build in public</span>
+    </div>
+  </div>
+</section>
+
+<section class="added-section" id="current-focus">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <h2>Skills, tools & creative range</h2>
+      <p class="sec-sub">A structured snapshot of the skills I’m building and applying across projects—from writing interfaces to debugging behaviour, connecting cloud data, and polishing the final experience.</p>
+    </div>
+    <div class="added-grid skills-grid">
+      <article class="added-card glass reveal">
+        <div class="added-icon" aria-hidden="true">⌘</div>
+        <div class="added-kicker">01 · Development foundations</div>
+        <h3>Build the interface. Make it work.</h3>
+        <p>Core web technologies and programming fundamentals for turning a layout into an interactive, responsive experience.</p>
+        <div class="skill-tags"><span>HTML5</span><span>CSS3</span><span>JavaScript</span><span>C programming</span><span>Responsive UI</span></div>
+        <div class="skill-level">Actively practising through projects</div>
+      </article>
+      <article class="added-card glass reveal">
+        <div class="added-icon" aria-hidden="true">⌘</div>
+        <div class="added-kicker">02 · Engineering workflow</div>
+        <h3>Debug, improve, and ship.</h3>
+        <p>Practical workflow skills for tracking changes, diagnosing issues, and making projects more reliable as they grow.</p>
+        <div class="skill-tags"><span>Git</span><span>GitHub</span><span>Debugging</span><span>API fundamentals</span><span>Browser storage</span></div>
+        <div class="skill-level">Learning by solving real project problems</div>
+      </article>
+      <article class="added-card glass reveal">
+        <div class="added-icon" aria-hidden="true">◇</div>
+        <div class="added-kicker">03 · Data & connected experiences</div>
+        <h3>Go beyond a static demo.</h3>
+        <p>Exploring the pieces that help a frontend remember progress and work with hosted services, user sign-in, and cloud-backed data.</p>
+        <div class="skill-tags"><span>Supabase</span><span>Cloud sync</span><span>Authentication basics</span><span>Data persistence</span></div>
+        <div class="skill-level">Applied in the SkillSphere project</div>
+      </article>
+      <article class="added-card glass reveal">
+        <div class="added-icon" aria-hidden="true">✳</div>
+        <div class="added-kicker">04 · Design & creative execution</div>
+        <h3>Make the experience feel intentional.</h3>
+        <p>Pairing visual judgement with interface design and editing to create cohesive, memorable digital experiences.</p>
+        <div class="skill-tags"><span>UI design</span><span>Visual design</span><span>Video editing</span><span>Motion details</span><span>Glassmorphism</span><span>3D-inspired visuals</span></div>
+        <div class="skill-level">Creative skills applied to portfolio and project work</div>
+      </article>
+    </div>
+    <div class="focus-strip glass reveal">
+      <div><strong>One toolkit. Multiple strengths.</strong><p>Development fundamentals, debugging, cloud-connected projects, and visual storytelling—kept honest, practical, and always improving.</p></div>
+      <span class="badge">Learn · Build · Refine</span>
+    </div>
+    <p class="added-note reveal">I present these as skills I’m practising and applying—not as a claim that I’ve mastered every tool. The goal is to show both range and how I use it in real work.</p>
   </div>
 </section>
 
@@ -1322,4 +1436,3 @@ ENV,
 </script>
 </body>
 </html>
-
